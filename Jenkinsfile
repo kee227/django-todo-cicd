@@ -1,49 +1,63 @@
+
 pipeline {
     agent any
 
+    triggers {
+        githubPush()
+    }
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        IMAGE_NAME = "todoapp"
+        DEPLOYMENT_NAME = "todoapp"
+        CONTAINER_NAME = "todoapp"
+    }
+
     stages {
 
-        stage('Checkout') {
+        stage('Checkout GitHub') {
             steps {
-                echo 'Downloading code from GitHub'
-                checkout scm
-            }
-        }
-
-        stage('Install Dependencies') {
-            steps {
-                sh '''
-                    python3 -m venv .venv
-                    .venv/bin/pip install -r requirements.txt
-                '''
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                echo 'Running Python tests'
-                sh '.venv/bin/pytest -v'
+                git branch: 'main',
+                    url: 'https://github.com/kee227/django-todo-cicd.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image'
-                sh 'docker build -t todoapp:latest .'
+                script {
+                    env.IMAGE_TAG = "v${BUILD_NUMBER}"
+                }
+
+                sh '''
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
+
+                    docker images ${IMAGE_NAME}
+                '''
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Kubernetes') {
             steps {
-                echo 'Deploying Todo application'
-
                 sh '''
-                    docker rm -f todoapp || true
+                    kubectl set image deployment/${DEPLOYMENT_NAME} \
+                    ${CONTAINER_NAME}=${IMAGE_NAME}:${IMAGE_TAG}
 
-                    docker run -d \
-                    --name todoapp \
-                    -p 5000:5000 \
-                    todoapp:latest
+                    kubectl rollout status deployment/${DEPLOYMENT_NAME} \
+                    --timeout=180s
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    kubectl get deployment todoapp
+                    kubectl get pods -o wide
+                    kubectl get services
                 '''
             }
         }
@@ -51,11 +65,11 @@ pipeline {
 
     post {
         success {
-            echo 'CI/CD Pipeline Successful!'
+            echo "SUCCESS: Todo application deployed with image ${IMAGE_NAME}:${IMAGE_TAG}"
         }
 
         failure {
-            echo 'CI/CD Pipeline Failed!'
+            echo 'FAILED: Check Jenkins Console Output.'
         }
     }
 }
