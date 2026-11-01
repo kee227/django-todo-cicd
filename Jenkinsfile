@@ -33,7 +33,7 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    venv/bin/python manage.py test
+                    venv/bin/python test_app.py test
                 '''
             }
         }
