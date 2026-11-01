@@ -2,10 +2,6 @@
 pipeline {
     agent any
 
-    triggers {
-        githubPush()
-    }
-
     options {
         disableConcurrentBuilds()
     }
@@ -18,10 +14,27 @@ pipeline {
 
     stages {
 
-        stage('Checkout GitHub') {
+        stage('Checkout') {
             steps {
                 git branch: 'main',
                     url: 'https://github.com/kee227/django-todo-cicd.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    venv/bin/pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    venv/bin/python manage.py test
+                '''
             }
         }
 
@@ -34,8 +47,6 @@ pipeline {
                 sh '''
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
-
-                    docker images ${IMAGE_NAME}
                 '''
             }
         }
@@ -56,7 +67,7 @@ pipeline {
             steps {
                 sh '''
                     kubectl get deployment todoapp
-                    kubectl get pods -o wide
+                    kubectl get pods
                     kubectl get services
                 '''
             }
@@ -65,11 +76,11 @@ pipeline {
 
     post {
         success {
-            echo "SUCCESS: Todo application deployed with image ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "Todo application deployed successfully!"
         }
 
         failure {
-            echo 'FAILED: Check Jenkins Console Output.'
+            echo "Pipeline failed. Check Console Output."
         }
     }
 }
