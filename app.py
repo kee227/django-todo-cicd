@@ -6,7 +6,7 @@ todos = []
 
 @app.route("/")
 def home():
-    return "Welcome to Todo App jenkins-cicd using docker hub !"
+    return "Welcome to Todo App jenkins-cicd using Added monitoring !"
 
 @app.route("/todos", methods=["GET"])
 def get_todos():
