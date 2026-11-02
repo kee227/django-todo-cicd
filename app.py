@@ -6,7 +6,7 @@ todos = []
 
 @app.route("/")
 def home():
-    return "Welcome to Todo App jenkins-cicd using webhook second time!"
+    return "Welcome to Todo App jenkins-cicd using docker hub image version!"
 
 @app.route("/todos", methods=["GET"])
 def get_todos():
