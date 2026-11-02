@@ -1,16 +1,17 @@
+
 pipeline {
     agent any
 
-     triggers {
+    triggers {
         githubPush()
     }
-    
+
     options {
         disableConcurrentBuilds()
     }
 
     environment {
-        IMAGE_NAME = "todoapp"
+        IMAGE_NAME = "mkr2026/django-todo-cicd"
         DEPLOYMENT_NAME = "todoapp"
         CONTAINER_NAME = "todoapp"
     }
@@ -51,6 +52,28 @@ pipeline {
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
                     docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
                 '''
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        set +x
+
+                        echo "$DOCKER_PASS" | docker login \
+                            -u "$DOCKER_USER" --password-stdin
+
+                        docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${IMAGE_NAME}:latest
+
+                        docker logout
+                    '''
+                }
             }
         }
 
