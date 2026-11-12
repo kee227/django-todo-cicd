@@ -76,7 +76,27 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        
+       stage('Backup to Floci S3') {
+        environment {
+         AWS_ACCESS_KEY_ID = 'test'
+         AWS_SECRET_ACCESS_KEY = 'test'
+         AWS_DEFAULT_REGION = 'us-east-1'
+         AWS_EC2_METADATA_DISABLED = 'true'
+        }
+        steps {
+           echo 'Creating and uploading Todo application backup to Floci S3'
+            sh '''
+                  chmod +x scripts/backup_to_floci_s3.sh
+                  ./scripts/backup_to_floci_s3.sh
+             '''
+          }
+
+        }
+        
+
+
+            stage('Deploy to Kubernetes') {
             steps {
                 sh '''
                     kubectl set image deployment/${DEPLOYMENT_NAME} \
