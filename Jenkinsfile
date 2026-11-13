@@ -86,10 +86,10 @@ pipeline {
         }
         steps {
            echo 'Creating and uploading Todo application backup to Floci S3'
-            sh '''
+             sh '''
                   chmod +x scripts/backup_to_floci_s3.sh
-                  ./scripts/backup_to_floci_s3.sh
-             '''
+                  bash scripts/backup_to_floci_s3.sh
+              '''          
           }
 
         }
